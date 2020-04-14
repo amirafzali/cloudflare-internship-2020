@@ -1,4 +1,5 @@
 // Thanks for the opportunity, and for taking the time to look at my code.
+// Commits were made, so git history is available.
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
