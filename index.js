@@ -1,3 +1,5 @@
+// Thanks for the opportunity, and for taking the time to look at my code.
+
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
@@ -7,7 +9,7 @@ addEventListener('fetch', event => {
  * @param {Request} request 
  */
 async function getVariants(request) {
-  // Perform a GET request on the API and parse the returned JSON object.
+  // Perform a GET request on the API and parse the response JSON object.
   const res = await fetch("https://cfw-takehome.developers.workers.dev/api/variants");
   const resJSON = await res.json();
   const { variants } = resJSON;
@@ -16,19 +18,13 @@ async function getVariants(request) {
   return Object.values(variants);
 }
 
-async function prepareResponse(domain, variantNumber) {
-
-}
-
 /**
- * Respond with hello worker text
+ * Handle request to the page request and return a response
  * @param {Request} request
  */
 async function handleRequest(request) {
 
-  const returnInfo = { headers: { 'content-type': 'text/html;charset=UTF-8' } };
-
-  // Try to grab a cookie on the request header
+  // Try to grab a cookie on the request header.
   const cookie = request.headers.get('cookie');
   const ID = "saved-response";
 
@@ -36,20 +32,62 @@ async function handleRequest(request) {
   const variants = await getVariants(request);
   const choice = Math.random() < 0.5 ? 0:1;
   const randomDomain = variants[choice];
-  const cookieValue = choice === 1 ? 'first':'second';
+  const cookieValue = choice === 0 ? 'first':'second';
 
-  // Check if the cookie exists
+  // Check if the cookie exists. If it does, try to form a response based on the cookie value.
+  // If no such option exists, then continue on.
   if(cookie) {
     if(cookie.includes(`${ID}=first`)) {
-      return new Response(formFirst());
+      return await prepareResponse(variants[0], 1)
     } else if(cookie.includes(`${ID}=second`)) {
-      return new Response(f);
+      return await prepareResponse(variants[1], 2)
     }
   }
 
-  // Remember the decision for next time.
-  //response.headers.append('Set-Cookie', `${ID}=${cookieValue}; path=/`);
-  const res = await fetch(randomDomain);  
-  console.log(randomDomain);
-  return new Response(await res.text(), returnInfo);
+  // If there is no cookie, then set one for next time.
+  const response = await prepareResponse(randomDomain, choice+1);
+  response.headers.append('Set-Cookie', `${ID}=${cookieValue}; path=/`);
+
+  return response;
+}
+
+/**
+ * This function takes the domain and variant number, and forms a customized response.
+ * I chose to make every tag handler a seperate class in order to maintain modularity.
+ * @param {String} domain 
+ * @param {Number} variantNumber 
+ */
+async function prepareResponse(domain, variantNumber) { 
+  // Declare tag handler classes with custom behaviour.
+  class TitleHandler {
+    element(element) {
+      element.setInnerContent(variantNumber == 1 ? "First Page :)":"Second Page :)");
+    }
+  }
+  class HeaderHandler {
+    element(element) {
+      element.setInnerContent(`Hey CloudFlare team! This is Variant ${variantNumber}.`);
+    }
+  }
+  class DescriptionHandler {
+    element(element) {
+      element.setAttribute("style", "color: purple; font-weight: 600");
+      element.setInnerContent(`Thanks for testing the program, your cookie is saved for this page! :)`);
+    }
+  }
+  class LinkHandler {
+    element(element) {
+      element.setInnerContent(`Click here to visit my GitHub!`);
+      element.setAttribute("href", "https://github.com/amirafzali");
+    }
+  }
+
+  // Listen for certain tags and use the appropriate handler in each case.
+  const res = await fetch(domain);
+  return new HTMLRewriter()
+            .on('title', new TitleHandler())
+            .on('h1#title', new HeaderHandler())
+            .on('p#description', new DescriptionHandler())
+            .on('a#url', new LinkHandler())
+          .transform(res);
 }
