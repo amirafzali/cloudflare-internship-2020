@@ -4,5 +4,5 @@ account_id = "d4750c9b67b89bf48307b962563972eb"
 workers_dev = true
 
 [env.production]
-route = "cloudflaretest.oaky.io"
+route = "fullstacktest.oaky.io/*"
 zone_id = "a18bec7c0b8e3774589611a0f2875c69"

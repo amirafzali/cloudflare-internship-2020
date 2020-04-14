@@ -5,11 +5,11 @@ addEventListener('fetch', event => {
 })
 
 /**
- * Helper function to return array of variant domains from API request
+ * Helper function to return array of variant domains from API request.
  * @param {Request} request 
  */
 async function getVariants(request) {
-  // Perform a GET request on the API and parse the response JSON object.
+  // Perform a request on the API and parse the response JSON object
   const res = await fetch("https://cfw-takehome.developers.workers.dev/api/variants");
   const resJSON = await res.json();
   const { variants } = resJSON;
@@ -19,7 +19,7 @@ async function getVariants(request) {
 }
 
 /**
- * Handle request to the page request and return a response
+ * Handle requests to the page and return a response.
  * @param {Request} request
  */
 async function handleRequest(request) {
@@ -28,14 +28,13 @@ async function handleRequest(request) {
   const cookie = request.headers.get('cookie');
   const ID = "saved-response";
 
-  // Retrieve the domain options and pick a random one (should be random enough for our purposes)
+  // Retrieve the domain variants and pick a random one (Math.random() should be random enough for our purposes)
   const variants = await getVariants(request);
   const choice = Math.random() < 0.5 ? 0:1;
   const randomDomain = variants[choice];
   const cookieValue = choice === 0 ? 'first':'second';
 
-  // Check if the cookie exists. If it does, try to form a response based on the cookie value.
-  // If no such option exists, then continue on.
+  // Check if the cookie exists. If it does, try to form a response based on the cookie value
   if(cookie) {
     if(cookie.includes(`${ID}=first`)) {
       return await prepareResponse(variants[0], 1)
@@ -44,15 +43,16 @@ async function handleRequest(request) {
     }
   }
 
-  // If there is no cookie, then set one for next time.
+  // If there is no cookie, then set one for next time
   const response = await prepareResponse(randomDomain, choice+1);
   response.headers.append('Set-Cookie', `${ID}=${cookieValue}; path=/`);
 
+  // Return the response
   return response;
 }
 
 /**
- * This function takes the domain and variant number, and forms a customized response.
+ * This function takes a domain and variant number, and forms a customized response.
  * I chose to make every tag handler a seperate class in order to maintain modularity.
  * @param {String} domain 
  * @param {Number} variantNumber 
@@ -66,7 +66,7 @@ async function prepareResponse(domain, variantNumber) {
   }
   class HeaderHandler {
     element(element) {
-      element.setInnerContent(`Hey CloudFlare team! This is Variant ${variantNumber}.`);
+      element.setInnerContent(`Hey Cloudflare team! This is Variant ${variantNumber}.`);
     }
   }
   class DescriptionHandler {
